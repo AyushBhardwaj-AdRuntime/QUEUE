@@ -1,14 +1,13 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "@/hooks/use-toast";
-import { Search, MapPin, Clock, Hospital, Settings } from "lucide-react";
+import { Hospital, MapPin, Clock, Users, ArrowRight, Search } from "lucide-react";
 
-interface HospitalWithWaiting {
+interface Hospital {
   id: string;
   name: string;
   address: string;
@@ -16,220 +15,212 @@ interface HospitalWithWaiting {
   longitude: number;
   contact_phone: string | null;
   contact_email: string | null;
-  waiting_count: number;
-  last_updated: string;
+  waiting_lists?: {
+    waiting_count: number;
+    last_updated: string;
+  }[];
 }
 
 const Index = () => {
-  const [hospitals, setHospitals] = useState<HospitalWithWaiting[]>([]);
-  const [searchLocation, setSearchLocation] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [sortBy, setSortBy] = useState<"distance" | "waiting">("waiting");
+  const [hospitals, setHospitals] = useState<Hospital[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    fetchAllHospitals();
+    fetchHospitals();
   }, []);
 
-  const fetchAllHospitals = async () => {
-    setLoading(true);
+  const fetchHospitals = async () => {
     const { data, error } = await supabase
       .from("hospitals")
       .select(`
         *,
-        waiting_lists!inner(waiting_count, last_updated)
-      `);
+        waiting_lists (
+          waiting_count,
+          last_updated
+        )
+      `)
+      .order("name");
 
     if (error) {
       console.error("Error fetching hospitals:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load hospitals",
-        variant: "destructive",
-      });
     } else {
-      const hospitalsWithWaiting: HospitalWithWaiting[] = data.map((hospital: any) => ({
-        ...hospital,
-        waiting_count: hospital.waiting_lists[0]?.waiting_count || 0,
-        last_updated: hospital.waiting_lists[0]?.last_updated || new Date().toISOString(),
-      }));
-      
-      setHospitals(hospitalsWithWaiting);
+      setHospitals(data || []);
     }
     setLoading(false);
   };
 
-  const handleSearch = () => {
-    if (!searchLocation.trim()) {
-      toast({
-        title: "Error",
-        description: "Please enter a location to search",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    // In a real app, this would filter by location/distance
-    fetchAllHospitals();
+  const filteredHospitals = hospitals.filter(hospital =>
+    hospital.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    hospital.address.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const getWaitingCount = (hospital: Hospital) => {
+    return hospital.waiting_lists?.[0]?.waiting_count || 0;
   };
 
-  const getCurrentLocation = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          setSearchLocation(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
-          toast({
-            title: "Location Found",
-            description: "Using your current location",
-          });
-        },
-        (error) => {
-          toast({
-            title: "Location Error",
-            description: "Unable to get your location",
-            variant: "destructive",
-          });
-        }
-      );
-    } else {
-      toast({
-        title: "Error",
-        description: "Geolocation is not supported by this browser",
-        variant: "destructive",
-      });
-    }
+  const getWaitBadgeVariant = (count: number) => {
+    if (count === 0) return "default";
+    if (count <= 5) return "secondary";
+    if (count <= 10) return "outline";
+    return "destructive";
   };
-
-  const sortedHospitals = [...hospitals].sort((a, b) => {
-    if (sortBy === "waiting") {
-      return a.waiting_count - b.waiting_count;
-    }
-    // For distance sorting, we'd calculate actual distance
-    // For now, just sort by name as placeholder
-    return a.name.localeCompare(b.name);
-  });
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <Hospital className="h-8 w-8 text-primary" />
-            <h1 className="text-4xl font-bold">Hospital Waiting Lists</h1>
+    <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background">
+      {/* Hero Section */}
+      <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
+        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <Hospital className="h-6 w-6 text-primary" />
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-primary-light bg-clip-text text-transparent">
+              WaitWatcher
+            </h1>
           </div>
-          <p className="text-xl text-muted-foreground mb-6">
-            Find nearby hospitals and check their current waiting times
+          <Button onClick={() => navigate("/auth")} variant="outline" className="gap-2">
+            Hospital Login
+            <ArrowRight className="h-4 w-4" />
+          </Button>
+        </div>
+      </header>
+
+      <main className="container mx-auto px-4 py-12">
+        {/* Hero Content */}
+        <div className="text-center mb-12 max-w-3xl mx-auto">
+          <h2 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent">
+            Find the Nearest Hospital
+          </h2>
+          <p className="text-lg text-muted-foreground mb-8">
+            Check real-time waiting lists and make informed decisions about your healthcare
           </p>
-          
-          <div className="flex justify-center mb-6">
-            <Link to="/auth">
-              <Button variant="outline">
-                <Settings className="h-4 w-4 mr-2" />
-                Hospital Staff Login
-              </Button>
-            </Link>
+
+          {/* Search Bar */}
+          <div className="relative max-w-xl mx-auto">
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Search by hospital name or location..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-12 h-14 text-lg shadow-soft"
+            />
           </div>
         </div>
 
-        {/* Search Section */}
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Search className="h-5 w-5" />
-              Find Hospitals Near You
-            </CardTitle>
-            <CardDescription>
-              Enter your location or use GPS to find nearby hospitals
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex gap-2 mb-4">
-              <Input
-                placeholder="Enter pincode, city, or coordinates..."
-                value={searchLocation}
-                onChange={(e) => setSearchLocation(e.target.value)}
-                className="flex-1"
-              />
-              <Button onClick={getCurrentLocation} variant="outline">
-                <MapPin className="h-4 w-4" />
-              </Button>
-              <Button onClick={handleSearch}>Search</Button>
-            </div>
-            
-            <div className="flex gap-2">
-              <Button
-                variant={sortBy === "waiting" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setSortBy("waiting")}
-              >
-                Sort by Waiting Time
-              </Button>
-              <Button
-                variant={sortBy === "distance" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setSortBy("distance")}
-              >
-                Sort by Distance
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12 max-w-4xl mx-auto">
+          <Card className="border-primary/20 shadow-soft hover:shadow-soft-lg transition-shadow">
+            <CardContent className="pt-6 text-center">
+              <Hospital className="h-8 w-8 text-primary mx-auto mb-2" />
+              <div className="text-3xl font-bold text-primary">{hospitals.length}</div>
+              <p className="text-sm text-muted-foreground">Hospitals Listed</p>
+            </CardContent>
+          </Card>
 
-        {/* Results */}
-        {loading ? (
-          <div className="text-center py-8">
-            <Hospital className="h-12 w-12 mx-auto mb-4 text-primary animate-pulse" />
-            <p>Loading hospitals...</p>
-          </div>
-        ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {sortedHospitals.map((hospital) => (
-              <Card key={hospital.id} className="hover:shadow-lg transition-shadow">
-                <CardHeader className="pb-4">
-                  <div className="flex justify-between items-start">
-                    <CardTitle className="text-lg">{hospital.name}</CardTitle>
-                    <Badge 
-                      variant={hospital.waiting_count <= 5 ? "default" : hospital.waiting_count <= 15 ? "secondary" : "destructive"}
-                      className="ml-2"
-                    >
-                      {hospital.waiting_count} waiting
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="flex items-start gap-2 text-sm">
-                      <MapPin className="h-4 w-4 mt-0.5 text-muted-foreground" />
-                      <span className="text-muted-foreground">{hospital.address}</span>
-                    </div>
-                    
-                    {hospital.contact_phone && (
-                      <div className="text-sm">
-                        <strong>Phone:</strong> {hospital.contact_phone}
+          <Card className="border-primary/20 shadow-soft hover:shadow-soft-lg transition-shadow">
+            <CardContent className="pt-6 text-center">
+              <Users className="h-8 w-8 text-primary mx-auto mb-2" />
+              <div className="text-3xl font-bold text-primary">
+                {hospitals.reduce((acc, h) => acc + getWaitingCount(h), 0)}
+              </div>
+              <p className="text-sm text-muted-foreground">Total Waiting</p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-primary/20 shadow-soft hover:shadow-soft-lg transition-shadow">
+            <CardContent className="pt-6 text-center">
+              <Clock className="h-8 w-8 text-primary mx-auto mb-2" />
+              <div className="text-3xl font-bold text-primary">Live</div>
+              <p className="text-sm text-muted-foreground">Real-time Updates</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Hospitals List */}
+        <div className="max-w-5xl mx-auto">
+          <h3 className="text-2xl font-semibold mb-6 flex items-center gap-2">
+            <MapPin className="h-6 w-6 text-primary" />
+            Available Hospitals
+          </h3>
+
+          {loading ? (
+            <div className="grid gap-6 md:grid-cols-2">
+              {[1, 2, 3, 4].map((i) => (
+                <Card key={i} className="animate-pulse">
+                  <CardHeader>
+                    <div className="h-6 bg-muted rounded w-3/4 mb-2"></div>
+                    <div className="h-4 bg-muted rounded w-1/2"></div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-4 bg-muted rounded w-full"></div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : filteredHospitals.length === 0 ? (
+            <Card className="text-center py-12">
+              <CardContent>
+                <Hospital className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-50" />
+                <p className="text-lg text-muted-foreground">
+                  {searchQuery ? "No hospitals found matching your search" : "No hospitals available yet"}
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-6 md:grid-cols-2">
+              {filteredHospitals.map((hospital) => {
+                const waitingCount = getWaitingCount(hospital);
+                return (
+                  <Card 
+                    key={hospital.id} 
+                    className="hover:shadow-soft-lg transition-all duration-300 border-primary/10 hover:border-primary/30"
+                  >
+                    <CardHeader>
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <CardTitle className="text-xl mb-2 flex items-center gap-2">
+                            <Hospital className="h-5 w-5 text-primary" />
+                            {hospital.name}
+                          </CardTitle>
+                          <CardDescription className="flex items-start gap-2">
+                            <MapPin className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                            <span>{hospital.address}</span>
+                          </CardDescription>
+                        </div>
                       </div>
-                    )}
-                    
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Clock className="h-3 w-3" />
-                      <span>
-                        Updated: {new Date(hospital.last_updated).toLocaleString()}
-                      </span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        )}
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Users className="h-5 w-5 text-muted-foreground" />
+                          <span className="text-sm text-muted-foreground">Waiting:</span>
+                        </div>
+                        <Badge variant={getWaitBadgeVariant(waitingCount)} className="text-base px-4 py-1">
+                          {waitingCount} {waitingCount === 1 ? "patient" : "patients"}
+                        </Badge>
+                      </div>
+                      {hospital.waiting_lists?.[0]?.last_updated && (
+                        <p className="text-xs text-muted-foreground mt-3 flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          Updated {new Date(hospital.waiting_lists[0].last_updated).toLocaleString()}
+                        </p>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </main>
 
-        {!loading && sortedHospitals.length === 0 && (
-          <div className="text-center py-8">
-            <Hospital className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-            <p className="text-muted-foreground">No hospitals found. Try a different location.</p>
-          </div>
-        )}
-      </div>
+      {/* Footer */}
+      <footer className="border-t mt-16 py-8 bg-card/30">
+        <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
+          <p>© 2025 WaitWatcher. Real-time hospital waiting list information.</p>
+        </div>
+      </footer>
     </div>
   );
 };

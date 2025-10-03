@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "@/hooks/use-toast";
-import { LogOut, Hospital, MapPin, Phone, Mail, Users, Plus, Minus, QrCode } from "lucide-react";
+import { LogOut, Hospital, MapPin, Phone, Mail, Users, Plus, Minus, QrCode, Home } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 import QRCode from "react-qr-code";
 
@@ -34,7 +34,6 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  // Hospital form state
   const [hospitalForm, setHospitalForm] = useState({
     name: "",
     address: "",
@@ -85,7 +84,6 @@ const Dashboard = () => {
     if (hospitalData) {
       setHospital(hospitalData);
       
-      // Fetch waiting list data
       const { data: waitingData, error: waitingError } = await supabase
         .from("waiting_lists")
         .select("*")
@@ -184,10 +182,10 @@ const Dashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-muted/30 to-background">
         <div className="text-center">
           <Hospital className="h-12 w-12 mx-auto mb-4 text-primary animate-pulse" />
-          <p>Loading dashboard...</p>
+          <p className="text-muted-foreground">Loading dashboard...</p>
         </div>
       </div>
     );
@@ -195,32 +193,33 @@ const Dashboard = () => {
 
   if (isCreating) {
     return (
-      <div className="min-h-screen bg-background p-4">
-        <div className="max-w-2xl mx-auto">
+      <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background p-4">
+        <div className="max-w-2xl mx-auto py-8">
           <div className="flex justify-between items-center mb-8">
             <div>
-              <h1 className="text-3xl font-bold">Create Hospital Profile</h1>
-              <p className="text-muted-foreground">Set up your hospital information</p>
+              <h1 className="text-4xl font-bold mb-2">Create Hospital Profile</h1>
+              <p className="text-muted-foreground text-lg">Set up your hospital information to get started</p>
             </div>
-            <Button variant="outline" onClick={handleSignOut}>
-              <LogOut className="h-4 w-4 mr-2" />
+            <Button variant="outline" onClick={handleSignOut} className="gap-2">
+              <LogOut className="h-4 w-4" />
               Sign Out
             </Button>
           </div>
 
-          <Card>
+          <Card className="shadow-soft-lg border-primary/10">
             <CardHeader>
-              <CardTitle>Hospital Information</CardTitle>
-              <CardDescription>
-                Enter your hospital details to get started
+              <CardTitle className="text-2xl">Hospital Information</CardTitle>
+              <CardDescription className="text-base">
+                Enter your hospital details to begin managing your waiting list
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-5">
               <div>
                 <Input
                   placeholder="Hospital Name *"
                   value={hospitalForm.name}
                   onChange={(e) => setHospitalForm({...hospitalForm, name: e.target.value})}
+                  className="h-12"
                 />
               </div>
               <div>
@@ -228,6 +227,7 @@ const Dashboard = () => {
                   placeholder="Full Address *"
                   value={hospitalForm.address}
                   onChange={(e) => setHospitalForm({...hospitalForm, address: e.target.value})}
+                  className="h-12"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -237,6 +237,7 @@ const Dashboard = () => {
                   step="any"
                   value={hospitalForm.latitude}
                   onChange={(e) => setHospitalForm({...hospitalForm, latitude: e.target.value})}
+                  className="h-12"
                 />
                 <Input
                   placeholder="Longitude *"
@@ -244,6 +245,7 @@ const Dashboard = () => {
                   step="any"
                   value={hospitalForm.longitude}
                   onChange={(e) => setHospitalForm({...hospitalForm, longitude: e.target.value})}
+                  className="h-12"
                 />
               </div>
               <div>
@@ -251,6 +253,7 @@ const Dashboard = () => {
                   placeholder="Contact Phone"
                   value={hospitalForm.contact_phone}
                   onChange={(e) => setHospitalForm({...hospitalForm, contact_phone: e.target.value})}
+                  className="h-12"
                 />
               </div>
               <div>
@@ -259,9 +262,10 @@ const Dashboard = () => {
                   type="email"
                   value={hospitalForm.contact_email}
                   onChange={(e) => setHospitalForm({...hospitalForm, contact_email: e.target.value})}
+                  className="h-12"
                 />
               </div>
-              <Button onClick={createHospital} className="w-full">
+              <Button onClick={createHospital} className="w-full h-12 text-base">
                 Create Hospital Profile
               </Button>
             </CardContent>
@@ -272,50 +276,58 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background p-4">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-bold">Hospital Dashboard</h1>
-            <p className="text-muted-foreground">Manage your waiting list</p>
+    <div className="min-h-screen bg-gradient-to-br from-background via-muted/30 to-background">
+      <header className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
+        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center">
+              <Hospital className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-xl font-bold">Hospital Dashboard</h1>
+              <p className="text-sm text-muted-foreground">Manage your waiting list</p>
+            </div>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => navigate("/")}>
-              View Public
+            <Button variant="outline" onClick={() => navigate("/")} className="gap-2">
+              <Home className="h-4 w-4" />
+              Public View
             </Button>
-            <Button variant="outline" onClick={handleSignOut}>
-              <LogOut className="h-4 w-4 mr-2" />
+            <Button variant="outline" onClick={handleSignOut} className="gap-2">
+              <LogOut className="h-4 w-4" />
               Sign Out
             </Button>
           </div>
         </div>
+      </header>
 
-        <div className="grid gap-6 md:grid-cols-2">
+      <main className="container mx-auto px-4 py-12">
+        <div className="grid gap-6 lg:grid-cols-2 max-w-6xl mx-auto">
           {/* Hospital Info */}
-          <Card>
+          <Card className="shadow-soft border-primary/10">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Hospital className="h-5 w-5" />
+              <CardTitle className="flex items-center gap-2 text-xl">
+                <Hospital className="h-5 w-5 text-primary" />
                 Hospital Information
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <h3 className="font-semibold text-lg">{hospital?.name}</h3>
+                <h3 className="font-semibold text-2xl text-primary mb-1">{hospital?.name}</h3>
               </div>
-              <div className="flex items-start gap-2 text-sm text-muted-foreground">
-                <MapPin className="h-4 w-4 mt-0.5" />
+              <div className="flex items-start gap-3 text-muted-foreground">
+                <MapPin className="h-5 w-5 mt-0.5 flex-shrink-0" />
                 <span>{hospital?.address}</span>
               </div>
               {hospital?.contact_phone && (
-                <div className="flex items-center gap-2 text-sm">
-                  <Phone className="h-4 w-4" />
+                <div className="flex items-center gap-3 text-muted-foreground">
+                  <Phone className="h-5 w-5" />
                   <span>{hospital.contact_phone}</span>
                 </div>
               )}
               {hospital?.contact_email && (
-                <div className="flex items-center gap-2 text-sm">
-                  <Mail className="h-4 w-4" />
+                <div className="flex items-center gap-3 text-muted-foreground">
+                  <Mail className="h-5 w-5" />
                   <span>{hospital.contact_email}</span>
                 </div>
               )}
@@ -323,78 +335,95 @@ const Dashboard = () => {
           </Card>
 
           {/* Waiting List Management */}
-          <Card>
+          <Card className="shadow-soft border-primary/10">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Waiting List Management
+              <CardTitle className="flex items-center gap-2 text-xl">
+                <Users className="h-5 w-5 text-primary" />
+                Waiting List
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-center mb-6">
-                <div className="text-4xl font-bold text-primary mb-2">
+              <div className="text-center mb-8">
+                <div className="text-6xl font-bold text-primary mb-3">
                   {waitingList?.waiting_count || 0}
                 </div>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-lg text-muted-foreground">
                   Patients currently waiting
                 </p>
                 {waitingList?.last_updated && (
-                  <p className="text-xs text-muted-foreground mt-1">
+                  <p className="text-sm text-muted-foreground mt-2">
                     Last updated: {new Date(waitingList.last_updated).toLocaleString()}
                   </p>
                 )}
               </div>
 
-              <Separator className="mb-6" />
+              <Separator className="mb-8" />
 
-              <div className="flex gap-2 justify-center">
+              <div className="flex gap-3 justify-center">
                 <Button 
                   variant="outline" 
                   size="lg"
                   onClick={() => updateWaitingCount(-1)}
                   disabled={!waitingList || waitingList.waiting_count <= 0}
+                  className="gap-2 h-14 px-6"
                 >
-                  <Minus className="h-4 w-4 mr-2" />
-                  Remove Patient
+                  <Minus className="h-5 w-5" />
+                  Remove
                 </Button>
                 <Button 
                   size="lg"
                   onClick={() => updateWaitingCount(1)}
+                  className="gap-2 h-14 px-6"
                 >
-                  <Plus className="h-4 w-4 mr-2" />
+                  <Plus className="h-5 w-5" />
                   Add Patient
                 </Button>
               </div>
             </CardContent>
           </Card>
 
-          {/* QR Code for Patient Check-in */}
-          <Card className="md:col-span-2">
+          {/* QR Code Section */}
+          <Card className="lg:col-span-2 shadow-soft border-primary/10">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <QrCode className="h-5 w-5" />
-                Patient Check-in QR Code
+              <CardTitle className="flex items-center gap-2 text-xl">
+                <QrCode className="h-5 w-5 text-primary" />
+                Patient Self Check-in
               </CardTitle>
+              <CardDescription className="text-base">
+                Display this QR code at your reception for automatic check-ins
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-                <div className="flex-1">
-                  <h3 className="font-semibold mb-2">How it works:</h3>
-                  <ul className="text-sm text-muted-foreground space-y-2">
-                    <li>1. Display this QR code at your hospital reception</li>
-                    <li>2. Patients scan the QR code with their phone</li>
-                    <li>3. The waiting list automatically increases by 1</li>
-                    <li>4. No manual entry required!</li>
-                  </ul>
+              <div className="flex flex-col md:flex-row items-center gap-8">
+                <div className="flex-1 space-y-3">
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-sm font-semibold text-primary">1</span>
+                    </div>
+                    <p className="text-muted-foreground">Display this QR code at your hospital reception desk</p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-sm font-semibold text-primary">2</span>
+                    </div>
+                    <p className="text-muted-foreground">Patients scan the code with their smartphone camera</p>
+                  </div>
+                  <div className="flex items-start gap-3">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-sm font-semibold text-primary">3</span>
+                    </div>
+                    <p className="text-muted-foreground">Waiting list automatically increases - no staff input needed</p>
+                  </div>
                 </div>
-                <div className="bg-white p-6 rounded-lg shadow-sm">
+                <div className="bg-white p-8 rounded-2xl shadow-soft-lg border">
                   {hospital && (
                     <QRCode 
                       value={`${window.location.origin}/scan/${hospital.id}`}
-                      size={200}
+                      size={220}
+                      className="mx-auto"
                     />
                   )}
-                  <p className="text-xs text-center mt-2 text-muted-foreground">
+                  <p className="text-sm text-center mt-4 text-muted-foreground font-medium">
                     Scan to join waiting list
                   </p>
                 </div>
@@ -402,7 +431,7 @@ const Dashboard = () => {
             </CardContent>
           </Card>
         </div>
-      </div>
+      </main>
     </div>
   );
 };
