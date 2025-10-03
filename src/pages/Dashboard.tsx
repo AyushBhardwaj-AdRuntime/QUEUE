@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "@/hooks/use-toast";
-import { LogOut, Hospital, MapPin, Phone, Mail, Users, Plus, Minus } from "lucide-react";
+import { LogOut, Hospital, MapPin, Phone, Mail, Users, Plus, Minus, QrCode } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
+import QRCode from "react-qr-code";
 
 interface Hospital {
   id: string;
@@ -363,6 +364,40 @@ const Dashboard = () => {
                   <Plus className="h-4 w-4 mr-2" />
                   Add Patient
                 </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* QR Code for Patient Check-in */}
+          <Card className="md:col-span-2">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <QrCode className="h-5 w-5" />
+                Patient Check-in QR Code
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                <div className="flex-1">
+                  <h3 className="font-semibold mb-2">How it works:</h3>
+                  <ul className="text-sm text-muted-foreground space-y-2">
+                    <li>1. Display this QR code at your hospital reception</li>
+                    <li>2. Patients scan the QR code with their phone</li>
+                    <li>3. The waiting list automatically increases by 1</li>
+                    <li>4. No manual entry required!</li>
+                  </ul>
+                </div>
+                <div className="bg-white p-6 rounded-lg shadow-sm">
+                  {hospital && (
+                    <QRCode 
+                      value={`${window.location.origin}/scan/${hospital.id}`}
+                      size={200}
+                    />
+                  )}
+                  <p className="text-xs text-center mt-2 text-muted-foreground">
+                    Scan to join waiting list
+                  </p>
+                </div>
               </div>
             </CardContent>
           </Card>
