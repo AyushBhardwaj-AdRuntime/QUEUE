@@ -14,7 +14,74 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      hospitals: {
+        Row: {
+          address: string
+          contact_email: string | null
+          contact_phone: string | null
+          created_at: string
+          id: string
+          latitude: number
+          longitude: number
+          name: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          address: string
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          latitude: number
+          longitude: number
+          name: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          address?: string
+          contact_email?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          id?: string
+          latitude?: number
+          longitude?: number
+          name?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      waiting_lists: {
+        Row: {
+          hospital_id: string
+          id: string
+          last_updated: string
+          waiting_count: number
+        }
+        Insert: {
+          hospital_id: string
+          id?: string
+          last_updated?: string
+          waiting_count?: number
+        }
+        Update: {
+          hospital_id?: string
+          id?: string
+          last_updated?: string
+          waiting_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "waiting_lists_hospital_id_fkey"
+            columns: ["hospital_id"]
+            isOneToOne: false
+            referencedRelation: "hospitals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
