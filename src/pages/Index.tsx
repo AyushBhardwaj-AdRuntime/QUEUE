@@ -129,7 +129,7 @@ const Index = () => {
 
       <main className="container mx-auto px-4 py-12 bg-[#8888c7]">
         {/* Hero Content */}
-        <div className="text-center mb-12 max-w-3xl mx-auto bg-neutral-600">
+        <div className="text-center mb-12 max-w-3xl mx-auto bg-card/50">
           <h2 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent">
             Find the Nearest Hospital
           </h2>
