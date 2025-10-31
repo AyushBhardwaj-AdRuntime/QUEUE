@@ -14,8 +14,9 @@ interface Hospital {
   id: string;
   name: string;
   address: string;
-  latitude: number;
-  longitude: number;
+  pincode: string | null;
+  latitude: number | null;
+  longitude: number | null;
   contact_phone: string | null;
   contact_email: string | null;
 }
@@ -37,11 +38,13 @@ const Dashboard = () => {
   const [hospitalForm, setHospitalForm] = useState({
     name: "",
     address: "",
-    latitude: "",
-    longitude: "",
+    pincode: "",
     contact_phone: "",
     contact_email: "",
   });
+  const [locationMode, setLocationMode] = useState<"auto" | "pincode">("auto");
+  const [locationStatus, setLocationStatus] = useState<string>("");
+  const [autoLocation, setAutoLocation] = useState<{latitude: number, longitude: number} | null>(null);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -105,11 +108,60 @@ const Dashboard = () => {
     navigate("/");
   };
 
+  const getAutomaticLocation = () => {
+    setLocationStatus("Getting your location...");
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setAutoLocation({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude
+          });
+          setLocationStatus("Location detected successfully!");
+          toast({
+            title: "Location Detected",
+            description: "Your hospital location has been automatically detected",
+          });
+        },
+        (error) => {
+          setLocationStatus("Unable to get location. Please use pincode instead.");
+          setLocationMode("pincode");
+          toast({
+            title: "Location Error",
+            description: "Please enable location access or use pincode",
+            variant: "destructive",
+          });
+        }
+      );
+    } else {
+      setLocationStatus("Location not supported. Please use pincode.");
+      setLocationMode("pincode");
+    }
+  };
+
   const createHospital = async () => {
-    if (!user || !hospitalForm.name || !hospitalForm.address || !hospitalForm.latitude || !hospitalForm.longitude) {
+    if (!user || !hospitalForm.name || !hospitalForm.address) {
       toast({
         title: "Error",
         description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (locationMode === "auto" && !autoLocation) {
+      toast({
+        title: "Error",
+        description: "Please allow location access or switch to pincode mode",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (locationMode === "pincode" && !hospitalForm.pincode) {
+      toast({
+        title: "Error",
+        description: "Please enter your pincode",
         variant: "destructive",
       });
       return;
@@ -120,8 +172,9 @@ const Dashboard = () => {
       .insert([{
         name: hospitalForm.name,
         address: hospitalForm.address,
-        latitude: parseFloat(hospitalForm.latitude),
-        longitude: parseFloat(hospitalForm.longitude),
+        pincode: hospitalForm.pincode || null,
+        latitude: locationMode === "auto" && autoLocation ? autoLocation.latitude : null,
+        longitude: locationMode === "auto" && autoLocation ? autoLocation.longitude : null,
         contact_phone: hospitalForm.contact_phone || null,
         contact_email: hospitalForm.contact_email || null,
         user_id: user.id,
@@ -230,24 +283,48 @@ const Dashboard = () => {
                   className="h-12"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <Input
-                  placeholder="Latitude *"
-                  type="number"
-                  step="any"
-                  value={hospitalForm.latitude}
-                  onChange={(e) => setHospitalForm({...hospitalForm, latitude: e.target.value})}
-                  className="h-12"
-                />
-                <Input
-                  placeholder="Longitude *"
-                  type="number"
-                  step="any"
-                  value={hospitalForm.longitude}
-                  onChange={(e) => setHospitalForm({...hospitalForm, longitude: e.target.value})}
-                  className="h-12"
-                />
+              
+              {/* Location Method Selection */}
+              <div className="space-y-3">
+                <label className="text-sm font-medium">Location Method</label>
+                <div className="flex gap-3">
+                  <Button
+                    type="button"
+                    variant={locationMode === "auto" ? "default" : "outline"}
+                    onClick={() => {
+                      setLocationMode("auto");
+                      getAutomaticLocation();
+                    }}
+                    className="flex-1"
+                  >
+                    <MapPin className="h-4 w-4 mr-2" />
+                    Auto-detect Location
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={locationMode === "pincode" ? "default" : "outline"}
+                    onClick={() => setLocationMode("pincode")}
+                    className="flex-1"
+                  >
+                    Pincode
+                  </Button>
+                </div>
+                {locationStatus && (
+                  <p className="text-sm text-muted-foreground">{locationStatus}</p>
+                )}
               </div>
+
+              {locationMode === "pincode" && (
+                <div>
+                  <Input
+                    placeholder="Pincode *"
+                    value={hospitalForm.pincode}
+                    onChange={(e) => setHospitalForm({...hospitalForm, pincode: e.target.value})}
+                    className="h-12"
+                  />
+                </div>
+              )}
+
               <div>
                 <Input
                   placeholder="Contact Phone"

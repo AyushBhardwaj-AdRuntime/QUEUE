@@ -21,9 +21,10 @@ export type Database = {
           contact_phone: string | null
           created_at: string
           id: string
-          latitude: number
-          longitude: number
+          latitude: number | null
+          longitude: number | null
           name: string
+          pincode: string | null
           updated_at: string
           user_id: string | null
         }
@@ -33,9 +34,10 @@ export type Database = {
           contact_phone?: string | null
           created_at?: string
           id?: string
-          latitude: number
-          longitude: number
+          latitude?: number | null
+          longitude?: number | null
           name: string
+          pincode?: string | null
           updated_at?: string
           user_id?: string | null
         }
@@ -45,9 +47,10 @@ export type Database = {
           contact_phone?: string | null
           created_at?: string
           id?: string
-          latitude?: number
-          longitude?: number
+          latitude?: number | null
+          longitude?: number | null
           name?: string
+          pincode?: string | null
           updated_at?: string
           user_id?: string | null
         }
@@ -87,7 +90,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      calculate_distance: {
+        Args: { lat1: number; lat2: number; lon1: number; lon2: number }
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never

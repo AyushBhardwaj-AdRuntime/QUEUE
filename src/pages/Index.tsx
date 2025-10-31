@@ -11,8 +11,9 @@ interface Hospital {
   id: string;
   name: string;
   address: string;
-  latitude: number;
-  longitude: number;
+  pincode: string | null;
+  latitude: number | null;
+  longitude: number | null;
   contact_phone: string | null;
   contact_email: string | null;
   waiting_lists?: {
@@ -25,11 +26,34 @@ const Index = () => {
   const [hospitals, setHospitals] = useState<Hospital[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
+  const [userLocation, setUserLocation] = useState<{latitude: number, longitude: number} | null>(null);
+  const [locationMode, setLocationMode] = useState<"nearby" | "pincode" | "all">("nearby");
+  const [userPincode, setUserPincode] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchHospitals();
+    getUserLocation();
   }, []);
+
+  const getUserLocation = () => {
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setUserLocation({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude
+          });
+        },
+        (error) => {
+          console.log("Location access denied, showing all hospitals");
+          setLocationMode("all");
+        }
+      );
+    } else {
+      setLocationMode("all");
+    }
+  };
 
   const fetchHospitals = async () => {
     const { data, error } = await supabase
@@ -51,10 +75,54 @@ const Index = () => {
     setLoading(false);
   };
 
-  const filteredHospitals = hospitals.filter(hospital =>
-    hospital.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    hospital.address.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+    const R = 6371; // Earth's radius in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c; // Distance in km
+  };
+
+  const filteredHospitals = hospitals
+    .filter(hospital => {
+      // Search filter
+      const matchesSearch = hospital.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        hospital.address.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      if (!matchesSearch) return false;
+
+      // Location filter
+      if (locationMode === "all") return true;
+      
+      if (locationMode === "nearby" && userLocation && hospital.latitude && hospital.longitude) {
+        const distance = calculateDistance(
+          userLocation.latitude,
+          userLocation.longitude,
+          hospital.latitude,
+          hospital.longitude
+        );
+        return distance <= 50; // Within 50km
+      }
+
+      if (locationMode === "pincode" && userPincode && hospital.pincode) {
+        return hospital.pincode === userPincode;
+      }
+
+      return true;
+    })
+    .sort((a, b) => {
+      // Sort by distance if location is available
+      if (locationMode === "nearby" && userLocation && a.latitude && a.longitude && b.latitude && b.longitude) {
+        const distA = calculateDistance(userLocation.latitude, userLocation.longitude, a.latitude, a.longitude);
+        const distB = calculateDistance(userLocation.latitude, userLocation.longitude, b.latitude, b.longitude);
+        return distA - distB;
+      }
+      return 0;
+    });
 
   const getWaitingCount = (hospital: Hospital) => {
     return hospital.waiting_lists?.[0]?.waiting_count || 0;
@@ -96,7 +164,7 @@ const Index = () => {
           </p>
 
           {/* Search Bar */}
-          <div className="relative max-w-xl mx-auto">
+          <div className="relative max-w-xl mx-auto mb-6">
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-muted-foreground" />
             <Input
               type="text"
@@ -105,6 +173,46 @@ const Index = () => {
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-12 h-14 text-lg shadow-soft"
             />
+          </div>
+
+          {/* Location Filter */}
+          <div className="max-w-xl mx-auto">
+            <div className="flex flex-wrap gap-3 justify-center mb-4">
+              <Button
+                variant={locationMode === "nearby" ? "default" : "outline"}
+                onClick={() => {
+                  setLocationMode("nearby");
+                  if (!userLocation) getUserLocation();
+                }}
+                className="gap-2"
+              >
+                <MapPin className="h-4 w-4" />
+                Nearby ({userLocation ? "Within 50km" : "Enable Location"})
+              </Button>
+              <Button
+                variant={locationMode === "pincode" ? "default" : "outline"}
+                onClick={() => setLocationMode("pincode")}
+                className="gap-2"
+              >
+                Search by Pincode
+              </Button>
+              <Button
+                variant={locationMode === "all" ? "default" : "outline"}
+                onClick={() => setLocationMode("all")}
+              >
+                Show All
+              </Button>
+            </div>
+
+            {locationMode === "pincode" && (
+              <Input
+                type="text"
+                placeholder="Enter your pincode..."
+                value={userPincode}
+                onChange={(e) => setUserPincode(e.target.value)}
+                className="h-12 text-center"
+              />
+            )}
           </div>
         </div>
 
@@ -174,7 +282,8 @@ const Index = () => {
                 return (
                   <Card 
                     key={hospital.id} 
-                    className="hover:shadow-soft-lg transition-all duration-300 border-primary/10 hover:border-primary/30"
+                    className="hover:shadow-soft-lg transition-all duration-300 border-primary/10 hover:border-primary/30 cursor-pointer"
+                    onClick={() => navigate(`/hospital/${hospital.id}`)}
                   >
                     <CardHeader>
                       <div className="flex items-start justify-between">
