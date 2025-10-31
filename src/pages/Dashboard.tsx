@@ -41,6 +41,7 @@ const Dashboard = () => {
     pincode: "",
     contact_phone: "",
     contact_email: "",
+    google_maps_link: "",
   });
   const [locationMode, setLocationMode] = useState<"auto" | "pincode">("auto");
   const [locationStatus, setLocationStatus] = useState<string>("");
@@ -177,6 +178,7 @@ const Dashboard = () => {
         longitude: locationMode === "auto" && autoLocation ? autoLocation.longitude : null,
         contact_phone: hospitalForm.contact_phone || null,
         contact_email: hospitalForm.contact_email || null,
+        google_maps_link: hospitalForm.google_maps_link || null,
         user_id: user.id,
       }])
       .select()
@@ -341,6 +343,18 @@ const Dashboard = () => {
                   onChange={(e) => setHospitalForm({...hospitalForm, contact_email: e.target.value})}
                   className="h-12"
                 />
+              </div>
+              <div>
+                <Input
+                  placeholder="Google Maps Link (e.g., https://maps.app.goo.gl/...)"
+                  type="url"
+                  value={hospitalForm.google_maps_link}
+                  onChange={(e) => setHospitalForm({...hospitalForm, google_maps_link: e.target.value})}
+                  className="h-12"
+                />
+                <p className="text-xs text-muted-foreground mt-2">
+                  Share your Google Maps location link so patients can easily navigate to your hospital
+                </p>
               </div>
               <Button onClick={createHospital} className="w-full h-12 text-base">
                 Create Hospital Profile

@@ -16,6 +16,7 @@ interface HospitalData {
   longitude: number | null;
   contact_phone: string | null;
   contact_email: string | null;
+  google_maps_link: string | null;
   waiting_lists?: {
     waiting_count: number;
     last_updated: string;
@@ -67,7 +68,9 @@ const HospitalDetail = () => {
   };
 
   const openInMaps = () => {
-    if (hospital?.latitude && hospital?.longitude) {
+    if (hospital?.google_maps_link) {
+      window.open(hospital.google_maps_link, '_blank');
+    } else if (hospital?.latitude && hospital?.longitude) {
       window.open(`https://www.google.com/maps/search/?api=1&query=${hospital.latitude},${hospital.longitude}`, '_blank');
     } else if (hospital?.address) {
       window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(hospital.address)}`, '_blank');

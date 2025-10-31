@@ -16,6 +16,7 @@ interface Hospital {
   longitude: number | null;
   contact_phone: string | null;
   contact_email: string | null;
+  google_maps_link: string | null;
   waiting_lists?: {
     waiting_count: number;
     last_updated: string;
